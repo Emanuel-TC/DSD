@@ -1,14 +1,24 @@
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
 
-class chat {
-
-    public static final int BUFSIZ = 1024;
-
+/**
+ *
+ * @author Emanuel
+ */
+public class chat {
     static void envia_mensaje_multicast(byte[] buffer, String ip, int puerto) throws IOException {
         DatagramSocket socket = new DatagramSocket();
         socket.send(new DatagramPacket(buffer, buffer.length, InetAddress.getByName(ip), puerto));
@@ -24,39 +34,39 @@ class chat {
 
     static class Worker extends Thread {
         public void run() {
-            // En un ciclo infinito se recibirán los mensajes enviados al grupo
-            // 230.0.0.0 a través del puerto 50000 y se desplegarán en la pantalla.
-            while(true) {
+            // En un ciclo infinito se recibirán los mensajes enviados al 
+            // grupo 230.0.0.0 a través del puerto 50000 y se desplegarán en la pantalla.
                 try{
-                    InetAddress grupo = InetAddress.getByName("230.0.0.0");
+                    
+                    InetAddress mcastaddr = InetAddress.getByName("230.0.0.0");
+                    InetSocketAddress grupo = new InetSocketAddress(mcastaddr, 50000 );
+                    NetworkInterface netIf = NetworkInterface.getByName("bge0");
                     MulticastSocket socket = new MulticastSocket(50000);
-                    socket.joinGroup(grupo);
-
-                    byte[] buffer = recibe_mensaje_multicast(socket, BUFSIZ);
-                    System.out.println(new String(buffer, "UTF-8"));
-                    socket.leaveGroup(grupo);
-                    socket.close();
+                    socket.joinGroup(grupo, netIf);         
+			for(;;) {
+                    		byte[] buf = recibe_mensaje_multicast(socket, 1024);
+                    		System.out.println();
+                    		System.out.println(new String(buf,"UTF-8"));
+                        }//socket.close();
                 } catch (IOException e){
                     e.printStackTrace();
                 }
-            }
-        }
+       }
     }
-
     public static void main(String[] args) throws Exception {
-        Worker w = new Worker();
-        w.start();
+        new Worker().start();
+        
         String nombre = args[0];
-        Scanner scanner = new Scanner(System. in);
+       //Scanner scanner = new Scanner(System.in);
+       BufferedReader in= new BufferedReader(new InputStreamReader(System.in));
     
         // En un ciclo infinito se leerá cada mensaje del teclado y se enviará el
         // mensaje al grupo 230.0.0.0 a través del puerto 50000.
-        while(true) {
-            System.out.println("Ingrese el mensaje a enviar:");
-            String mensaje = scanner. nextLine();
-            byte buffer[] = String.format("%s dice %s", nombre, mensaje).getBytes();
-            envia_mensaje_multicast(buffer, "230.0.0.0",50000);
+        for(;;) {
+            System.out.println("Inserte mensaje que desea enviar:");
+            String mensaje = in.readLine();
+            byte buf[] = String.format("%s dice %s", nombre, mensaje).getBytes(StandardCharsets.UTF_8);
+            envia_mensaje_multicast(buf, "230.0.0.0",50000);
         }
     }
-
 }
