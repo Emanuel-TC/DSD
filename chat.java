@@ -46,7 +46,7 @@ public class chat {
 			for(;;) {
                     		byte[] buf = recibe_mensaje_multicast(socket, 1024);
                     		System.out.println();
-                    		System.out.println(new String(buf,"UTF-8"));
+                    		System.out.println(new String(buf,"UTF-8").replaceAll("\u0000", ""));
                         }//socket.close();
                 } catch (IOException e){
                     e.printStackTrace();
